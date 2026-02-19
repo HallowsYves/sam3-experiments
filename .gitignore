@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+
+# SAM 3 Checkpoints (Crucial to ignore)
+*.pth
+*.checkpoint
+checkpoints/
+
+data/
+logs/
+.ipynb_checkpoints/
+
+.env
+venv/
+
+media/
