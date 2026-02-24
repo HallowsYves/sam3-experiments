@@ -74,8 +74,8 @@ width, height = frame0.shape[1], frame0.shape[0]
 ann_frame_idx = 0  # the frame index we interact with
 ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)
 
-# Let's add a positive click at (x, y) = (210, 350) to get started
-points = np.array([[210, 350]], dtype=np.float32)
+# positive click at (x, y) = (170, 300) ~ Hey lets segment at this point
+points = np.array([[170, 300]], dtype=np.float32)
 # for labels, `1` means positive click and `0` means negative click
 labels = np.array([1], np.int32)
 
@@ -93,10 +93,24 @@ _, out_obj_ids, low_res_masks, video_res_masks = predictor.add_new_points(
     clear_old_points=False,
 )
 
-# show the results on the current (interacted) frame
-plt.figure(figsize=(9, 6))
-plt.title(f"frame {ann_frame_idx}")
-plt.imshow(frame0)
-show_points(points, labels, plt.gca())
-show_mask((video_res_masks[0] > 0.0).cpu().numpy(), plt.gca(), obj_id=out_obj_ids[0])
-plt.show()
+# run propagation throughout the video and collect the results in a dict
+video_segments = {}  # video_segments contains the per-frame segmentation results
+for frame_idx, obj_ids, low_res_masks, video_res_masks, obj_scores in predictor.propagate_in_video(inference_state, start_frame_idx=0, max_frame_num_to_track=240, reverse=False, propagate_preflight=True):
+    video_segments[frame_idx] = {
+        out_obj_id: (video_res_masks[i] > 0.0).cpu().numpy()
+        for i, out_obj_id in enumerate(out_obj_ids)
+    }
+
+# render the segmentation results every few frames
+vis_frame_stride = 20
+plt.close("all")
+plt.ion()
+for out_frame_idx in range(0, len(video_frames_for_vis), vis_frame_stride):
+    plt.clf()
+    plt.figure(figsize=(6, 4))
+    plt.title(f"frame {out_frame_idx}")
+    plt.imshow(video_frames_for_vis[out_frame_idx])
+    for out_obj_id, out_mask in video_segments[out_frame_idx].items():
+        show_mask(out_mask, plt.gca(), obj_id=out_obj_id)
+    plt.pause(2)
+plt.ioff()
