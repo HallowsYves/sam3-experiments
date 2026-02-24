@@ -51,11 +51,12 @@ predictor.backbone = sam3_model.detector.backbone
 
 
 # Initialize inference state
-video_path = f"{sam3_root}/media/videos/penguins.mp4"
+video_path = f"{sam3_root}/media/videos/sample_vid(trimmed).mp4"
 inference_state = predictor.init_state(video_path=video_path)
 
 predictor.clear_all_points_in_video(inference_state)
 
+#350, 230
 # Turns a video into frames, then cv2 just convets it to RGB. Then releases them when done.
 cap = cv2.VideoCapture(video_path)
 video_frames_for_vis = []
@@ -75,7 +76,7 @@ ann_frame_idx = 0  # the frame index we interact with
 ann_obj_id = 1  # give a unique id to each object we interact with (it can be any integers)
 
 # positive click at (x, y) = (170, 300) ~ Hey lets segment at this point
-points = np.array([[170, 300]], dtype=np.float32)
+points = np.array([[350, 230]], dtype=np.float32)
 # for labels, `1` means positive click and `0` means negative click
 labels = np.array([1], np.int32)
 
@@ -93,6 +94,8 @@ _, out_obj_ids, low_res_masks, video_res_masks = predictor.add_new_points(
     clear_old_points=False,
 )
 
+
+
 # run propagation throughout the video and collect the results in a dict
 video_segments = {}  # video_segments contains the per-frame segmentation results
 for frame_idx, obj_ids, low_res_masks, video_res_masks, obj_scores in predictor.propagate_in_video(inference_state, start_frame_idx=0, max_frame_num_to_track=240, reverse=False, propagate_preflight=True):
@@ -102,7 +105,7 @@ for frame_idx, obj_ids, low_res_masks, video_res_masks, obj_scores in predictor.
     }
 
 # render the segmentation results every few frames
-vis_frame_stride = 20
+vis_frame_stride = 5
 plt.close("all")
 plt.ion()
 for out_frame_idx in range(0, len(video_frames_for_vis), vis_frame_stride):
@@ -114,3 +117,22 @@ for out_frame_idx in range(0, len(video_frames_for_vis), vis_frame_stride):
         show_mask(out_mask, plt.gca(), obj_id=out_obj_id)
     plt.pause(2)
 plt.ioff()
+
+
+
+"""
+    fourccCode = cv2.VideoWriter_fourcc(*'mp4v')
+    videoFileName = 'seg_sample.mp4'
+    recordedVideo = cv2.VideoWriter(videoFileName, fourccCode,30, (width, height))
+
+    fig = plt.gcf()
+    fig.canvas.draw()
+    buf = fig.canvas.tostring_argb()
+    width, height = fig.canvas.get_width_height()
+    img_array = np.frombuffer(buf, dtype=np.uint8).reshape(height, width, 4)
+    img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGBA2BGR)
+    recordedVideo.write(img_bgr)
+
+    recordedVideo.release()
+
+"""
